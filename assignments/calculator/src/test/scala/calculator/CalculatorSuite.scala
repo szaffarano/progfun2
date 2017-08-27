@@ -51,4 +51,34 @@ class CalculatorSuite extends FunSuite with ShouldMatchers {
     assert(resultRed2() == "red")
   }
 
+  test("self dependency"){
+    import Calculator._
+
+    val selfRefs: Map[String, Signal[Expr]] = Map(
+    "a" -> Signal(Literal(2)),
+    "b" -> Signal(Ref("a")),
+    "c" -> Signal(Ref("c")),
+    "d" -> Signal(Plus(Ref("a"), Ref("d"))),
+    "e" -> Signal(Minus(Ref("a"), Ref("e")))
+    )
+
+    val values = computeValues(selfRefs)
+
+    assert(values("c")() equals Double.NaN)
+  }
+
+  test("cyclic dependencies"){
+    import Calculator._
+
+    val cyclicRefs: Map[String, Signal[Expr]] = Map(
+      "x" -> Signal(Ref("z")),
+      "z" -> Signal(Ref("x")),
+      "y" -> Signal(Minus(Ref("x"), Ref("z")))
+    )
+    val values = computeValues(cyclicRefs)
+
+    assert(values("x")() equals Double.NaN)
+    assert(values("z")() equals Double.NaN)
+    assert(values("y")() equals Double.NaN)
+  }
 }
