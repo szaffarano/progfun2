@@ -9,28 +9,12 @@ final case class Times(a: Expr, b: Expr) extends Expr
 final case class Divide(a: Expr, b: Expr) extends Expr
 
 object Calculator {
-  def computeValues(
-      namedExpressions: Map[String, Signal[Expr]]): Map[String, Signal[Double]] = {
-    def isSafe(n: String, s: Expr): Signal[Boolean] = {
-      println("preguntando si es seguro " + n + " para " + s)
-      Signal {
-        s match {
-          case Literal(_) => true
-          case Ref(name) => name != n
-          case Plus(a, b) => isSafe(n, a)() && isSafe(n, b)()
-          case Minus(a, b) => isSafe(n, a)() && isSafe(n, b)()
-          case Times(a, b) => isSafe(n, a)() && isSafe(n, b)()
-          case Divide(a, b) => isSafe(n, a)() && isSafe(n, b)()
-        }
-      }
-    }
-
+  def computeValues(namedExpressions: Map[String, Signal[Expr]]): Map[String, Signal[Double]] = {
     namedExpressions.map {
       case (n, s) => {
         if (!namedExpressions.contains(n)) (n, Signal(Double.NaN))
-        else  (n, Signal {
-          if (!isSafe(n, s())()) Double.NaN
-          else eval(s(), namedExpressions)
+        else (n, Signal {
+          eval(s(), namedExpressions)
         })
       }
     }
@@ -63,7 +47,7 @@ object Calculator {
   /** Get the Expr for a referenced variables.
    *  If the variable is not known, returns a literal NaN.
    */
-  private def getReferenceExpr(name: String,
+  def getReferenceExpr(name: String,
       references: Map[String, Signal[Expr]]): Expr = {
     references.get(name).fold[Expr] {
       Literal(Double.NaN)
